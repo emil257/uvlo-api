@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.DataProtection;
 using uvlo_api.Data;
 using uvlo_api.Api.Data.Models;
 using Serilog;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +15,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("REDIS_CONNECTIONSTRING");
 });
 
-builder.Services.AddScoped<ITicketStore, AppTicketStore>();
+builder.Services.AddSingleton<ITicketStore, AppTicketStore>();
 
 builder.Services.AddIdentityApiEndpoints<AppUserModel>((options) => options.SignIn.RequireConfirmedAccount = false)
         .AddRoles<AppRoleModel>()
@@ -30,23 +32,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.Cookie.HttpOnly = true;
-    options.SessionStore = builder.Services.BuildServiceProvider().GetRequiredService<ITicketStore>();
-    options.ExpireTimeSpan = TimeSpan.FromHours(2);
-		options.SlidingExpiration = true;
-    options.Events.OnSigningIn = context =>
-    {
-        var request = context.Request;
-        var domain = request.Host.Host;
-        // if(domain.EndsWith("uvlo.com")){
-        // 	context.CookieOptions.Domain = ".uvlo.com";
-        // }
-        return Task.CompletedTask;
-    };
-});
+//Only for development, in production use a secure key management solution like Azure Key Vault or AWS KMS
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile) + "/.aspnet/DataProtection-Keys"));
 
+//Configure cookie options for Identity
+builder.Services.AddSingleton<IConfigureOptions<CookieAuthenticationOptions>, ConfigureIdentityCookieOptions>();
 
 builder.Host.UseSerilog((context, configuration) =>
         configuration.ReadFrom.Configuration(context.Configuration));

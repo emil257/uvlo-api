@@ -1,0 +1,22 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using uvlo_api.Api.Data.Models;
+using uvlo_api.Data;
+
+public static partial class InfrastructureServiceCollectionExtensions
+{
+    public static IServiceCollection AddIdentityInfrastructure(this IServiceCollection services)
+    {
+
+        services.AddIdentityApiEndpoints<AppUserModel>((options) => options.SignIn.RequireConfirmedAccount = false)
+                .AddRoles<AppRoleModel>()
+                .AddUserStore<AppUserStore>()
+                .AddEntityFrameworkStores<AppDbContext>();
+
+        services.AddSingleton<ITicketStore, AppTicketStore>();
+
+				//Configure cookie options for Identity
+				services.ConfigureOptions<ConfigureIdentityCookieOptions>();
+
+        return services;
+    }
+}

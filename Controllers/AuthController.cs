@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using uvlo_api.Data.Models.Database;
 
@@ -12,18 +13,27 @@ using uvlo_api.Data.Models.Database;
 public class AuthController : ControllerBase
 {
   private readonly SignInManager<AppUserModel> _signInManager;
+  private readonly UserManager<AppUserModel> _userManager;
+  private readonly ILogger<AuthController> _logger;
 
-  public AuthController(SignInManager<AppUserModel> signInManager)
+  public AuthController(SignInManager<AppUserModel> signInManager, ILogger<AuthController> logger, UserManager<AppUserModel> userManager)
   {
     _signInManager = signInManager;
+    _logger = logger;
+    _userManager = userManager;
   }
 
   [HttpGet("me")]
-  public Results<Ok<String>, ProblemHttpResult> Me()
+  public async Task<Results<Ok<AppUserModel>, NotFound>> Me()
   {
     string? Name = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-    return TypedResults.Ok(Name);
+    bool isParsed = int.TryParse(Name, out int userId);
+    AppUserModel? user = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+    if(user == null)
+    {
+        return TypedResults.NotFound();
+    }
+    return TypedResults.Ok(user);
   }
   [HttpPost("logout")]
   public async Task<Results<Ok, ProblemHttpResult>> Logout()

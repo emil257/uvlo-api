@@ -7,4 +7,5 @@ public interface IPostsRepo
   Task<Post> CreatePostAsync(PostCreateDto post, int UserId, CancellationToken cancellationToken);
   Task<int> DeletePostAsync(int id, int UserId, CancellationToken cancellationToken);
   Task<int> UpdatePostAsync(PostUpdateDto post, int UserId, CancellationToken cancellationToken);
+  Task<PostComment?> CreatePostCommentAsync(PostCommentCreateDto postComment, int UserId, CancellationToken cancellationToken);
 }

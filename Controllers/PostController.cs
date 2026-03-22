@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using uvlo_api.Data.Models.Database;
 
 [Route("posts")]
@@ -56,18 +56,29 @@ public class PostController : ControllerBase
     }
     return TypedResults.Ok();
   }
-	[HttpPut()]
-	public async Task<Results<Ok, NotFound>> UpdatePost([FromBody] PostUpdateDto postUpdateDto)
-	{
-		int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
+  [HttpPut()]
+  public async Task<Results<Ok, NotFound>> UpdatePost([FromBody] PostUpdateDto postUpdateDto)
+  {
+    int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
 
-		int post = await _postsRepo.UpdatePostAsync(postUpdateDto, UserId, HttpContext.RequestAborted);
-		if (post == 0)
-		{
-			return TypedResults.NotFound();
-		}
-		return TypedResults.Ok();
-	 }
+    int post = await _postsRepo.UpdatePostAsync(postUpdateDto, UserId, HttpContext.RequestAborted);
+    if (post == 0)
+    {
+      return TypedResults.NotFound();
+    }
+    return TypedResults.Ok();
+  }
+  [HttpPost("comment")]
+  public async Task<Results<Ok<PostComment>, NotFound>> CreatePostComment([FromBody] PostCommentCreateDto postCommentCreateDto)
+  {
+    int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
+    PostComment? createdComment = await _postsRepo.CreatePostCommentAsync(postCommentCreateDto, UserId, HttpContext.RequestAborted);
+    if (createdComment == null)
+    {
+      return TypedResults.NotFound();
+    }
+    return TypedResults.Ok(createdComment);
+  }
 }
 
 

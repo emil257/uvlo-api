@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using uvlo_api.Data;
 using uvlo_api.Data.Models.Database;
+using uvlo_api.Data.Models.View;
 
 public class PostsRepo : IPostsRepo
 {
@@ -11,100 +12,93 @@ public class PostsRepo : IPostsRepo
     _dbContext = dbContext;
   }
 
-  public async Task<Post> CreatePostAsync(PostCreateDto postCreateDto, int UserId, CancellationToken cancellationToken)
-  {
-    Post post = new Post
-    {
-      UserId = UserId,
-      Title = postCreateDto.Title,
-      Content = postCreateDto.Content
-    };
-
-    _dbContext.Posts.Add(post);
-    await _dbContext.SaveChangesAsync(cancellationToken);
-
-    return post;
-  }
-
-
-  public async Task<int> DeletePostAsync(int id, int UserId, CancellationToken cancellationToken)
-  {
-    int affectedRows = await _dbContext.Posts
-                                .Where(p => p.Id == id && p.UserId == UserId)
-                                .ExecuteUpdateAsync(p => p.SetProperty(p => p.DeletedAt, DateTimeOffset.UtcNow)
-                                );
-    return affectedRows;
-  }
-
   public async Task<Post?> GetPostAsync(int id, CancellationToken cancellationToken)
   {
     Post? post = await _dbContext.Posts
-     .Join(_dbContext.Users, p => p.UserId, u => u.Id, (post, user) => new { post, user })
-     .Select(p => new Post
-     {
-       Id = p.post.Id,
-       Title = p.post.Title,
-       Content = p.post.Content,
-       UserId = p.post.UserId,
-       UpdatedAt = p.post.UpdatedAt,
-       DeletedAt = p.post.DeletedAt,
-       CreatedAt = p.post.CreatedAt,
-       Comments = p.post.Comments.Take(5).ToList(),
-       CommentsCount = p.post.Comments.Count,
-       UserName = p.user.UserName,
-     })
     .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     return post;
   }
 
-  public async Task<List<Post>> GetPostsAsync(CancellationToken cancellationToken)
+  public async Task<PostView?> GetPostViewAsync(int id, CancellationToken cancellationToken)
   {
-    IEnumerable<Post> posts = await _dbContext.Posts
-                                        .Join(_dbContext.Users, p => p.UserId, u => u.Id, (post, user) => new { post, user })
-                                        .Select(p => new Post
-                                        {
-                                          Id = p.post.Id,
-                                          Title = p.post.Title,
-                                          Content = p.post.Content,
-                                          UserId = p.post.UserId,
-                                          UpdatedAt = p.post.UpdatedAt,
-                                          DeletedAt = p.post.DeletedAt,
-                                          CreatedAt = p.post.CreatedAt,
-                                          Comments = p.post.Comments.Take(5).ToList(),
-                                          CommentsCount = p.post.Comments.Count,
-                                          UserName = p.user.UserName,
-                                        })
-                                        .AsSplitQuery()
-                                        .ToListAsync(cancellationToken);
+    PostView? post = await _dbContext.Posts
+      .Select(s => new PostView()
+      {
+        Id = s.Id,
+        Title = s.Title,
+        Content = s.Content,
+        User = new UserView
+        {
+          Id = s.User.Id,
+          UserName = s.User.UserName
+        },
+        Comments = s.Comments.Take(5).Select(c => new PostCommentView
+        {
+          Id = c.Id,
+          Content = c.Content,
+          User = new UserView
+          {
+            Id = c.User.Id,
+            UserName = c.User.UserName
+          },
+          CreatedAt = c.CreatedAt,
+          UpdatedAt = c.UpdatedAt
+        }).ToList(),
+        CommentsCount = s.Comments.Count,
+        CreatedAt = s.CreatedAt,
+        UpdatedAt = s.UpdatedAt
+      })
+      .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+    return post;
+  }
+
+  public async Task<List<PostView>> GetPostsViewAsync(CancellationToken cancellationToken)
+  {
+    IEnumerable<PostView> posts = await _dbContext.Posts
+      .Select(p => new PostView
+      {
+        Id = p.Id,
+        Title = p.Title,
+        Content = p.Content,
+        Comments = p.Comments.Take(5).Select(c => new PostCommentView
+        {
+          Id = c.Id,
+          Content = c.Content,
+          User = new UserView
+          {
+            Id = c.User.Id,
+            UserName = c.User.UserName
+          },
+          CreatedAt = c.CreatedAt,
+          UpdatedAt = c.UpdatedAt
+        }).ToList(),
+        CommentsCount = p.Comments.Count(),
+        User = new UserView
+        {
+          Id = p.User.Id,
+          UserName = p.User.UserName
+        },
+        UpdatedAt = p.UpdatedAt,
+        CreatedAt = p.CreatedAt
+      })
+      .AsSplitQuery()
+    .ToListAsync(cancellationToken);
 
     return posts.ToList();
   }
 
-  public async Task<int> UpdatePostAsync(PostUpdateDto post, int UserId, CancellationToken cancellationToken)
+  public async Task<Post> Save(Post post, CancellationToken cancellationToken)
   {
-    int affectedRows = await _dbContext.Posts
-                                .Where(p => p.Id == post.Id && p.UserId == UserId)
-                                .ExecuteUpdateAsync(p => p.SetProperty(p => p.Title, post.Title)
-                                .SetProperty(p => p.Content, post.Content)
-                                .SetProperty(p => p.UpdatedAt, DateTimeOffset.UtcNow));
-    return affectedRows;
-  }
-
-  public async Task<PostComment?> CreatePostCommentAsync(PostCommentCreateDto postComment, int UserId, CancellationToken cancellationToken)
-  {
-    Post? post = await _dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postComment.PostId, cancellationToken);
-
-    if (post == null) { return null; }
-
-    PostComment comment = new PostComment
+    Console.WriteLine(_dbContext.Entry(post).State);
+    if (_dbContext.Entry(post).State == EntityState.Detached)
     {
-      UserId = UserId,
-      PostId = postComment.PostId,
-      Content = postComment.Content
-    };
-
-    _dbContext.PostComments.Add(comment);
+      _dbContext.Posts.Add(post);
+    }
+    else
+    {
+      _dbContext.Posts.Update(post);
+    }
     await _dbContext.SaveChangesAsync(cancellationToken);
-    return comment;
+    return post;
   }
 }

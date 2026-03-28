@@ -1,11 +1,10 @@
 using uvlo_api.Data.Models.Database;
+using uvlo_api.Data.Models.View;
 
 public interface IPostsRepo
 {
-  Task<List<Post>> GetPostsAsync(CancellationToken cancellationToken);
+  Task<List<PostView>> GetPostsViewAsync(CancellationToken cancellationToken);
+  Task<PostView?> GetPostViewAsync(int id, CancellationToken cancellationToken);
   Task<Post?> GetPostAsync(int id, CancellationToken cancellationToken);
-  Task<Post> CreatePostAsync(PostCreateDto post, int UserId, CancellationToken cancellationToken);
-  Task<int> DeletePostAsync(int id, int UserId, CancellationToken cancellationToken);
-  Task<int> UpdatePostAsync(PostUpdateDto post, int UserId, CancellationToken cancellationToken);
-  Task<PostComment?> CreatePostCommentAsync(PostCommentCreateDto postComment, int UserId, CancellationToken cancellationToken);
+  Task<Post> Save(Post post, CancellationToken cancellationToken);
 }

@@ -11,6 +11,7 @@ builder.Services.AddPersistenceInfrastructure(builder.Configuration)
                                 .AddIdentityInfrastructure()
                                 .AddDataProtectionInfrastructure()
                                 .AddRepos()
+                                .AddServices()
                                 .AddPresentation();
 
 var app = builder.Build();

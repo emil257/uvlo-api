@@ -3,80 +3,73 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using uvlo_api.Data.Models.Database;
+using uvlo_api.Data.Models.Dto;
+using uvlo_api.Data.Models.View;
+using uvlo_api.Services;
 
 [Route("posts")]
 [ApiController]
 [Authorize]
 public class PostController : ControllerBase
 {
-  private readonly IPostsRepo _postsRepo;
-  public PostController(IPostsRepo postsRepo)
+  private readonly PostService _postService;
+  public PostController(PostService postService)
   {
-    _postsRepo = postsRepo;
+    _postService = postService;
   }
 
   [HttpPost()]
-  public async Task<Results<Ok<Post>, ProblemHttpResult>> CreatePost(
+  public async Task<Results<Ok<PostView>, ProblemHttpResult>> CreatePost(
     [FromBody] PostCreateDto postCreateDto
   )
   {
     int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
 
-    Post createdPost = await _postsRepo.CreatePostAsync(postCreateDto, UserId, HttpContext.RequestAborted);
+    PostView createdPost = await _postService.CreatePostAsync(postCreateDto.Title, postCreateDto.Content, UserId, HttpContext.RequestAborted);
 
     return TypedResults.Ok(createdPost);
   }
 
   [HttpGet()]
-  public async Task<Results<Ok<IEnumerable<Post>>, NotFound>> GetPosts()
+  public async Task<Results<Ok<IEnumerable<PostView>>, NotFound>> GetPosts()
   {
-    IEnumerable<Post> posts = await _postsRepo.GetPostsAsync(HttpContext.RequestAborted);
+    IEnumerable<PostView> posts = await _postService.GetPostsAsync(HttpContext.RequestAborted);
+
     return TypedResults.Ok(posts);
   }
 
   [HttpGet("{id}")]
-  public async Task<Results<Ok<Post>, NotFound>> GetPostById(int id)
+  public async Task<Results<Ok<PostView>, NotFound>> GetPostById(int id)
   {
-    Post? post = await _postsRepo.GetPostAsync(id, HttpContext.RequestAborted);
-    if (post == null)
-    {
-      return TypedResults.NotFound();
-    }
+    PostView post = await _postService.GetPostById(id, HttpContext.RequestAborted);
+    
     return TypedResults.Ok(post);
   }
   [HttpDelete("{id}")]
-  public async Task<Results<Ok, NotFound>> DeletePost(int id)
+  public async Task<Results<Ok<PostView>, NotFound>> DeletePost(int id)
   {
     int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
 
-    int post = await _postsRepo.DeletePostAsync(id, UserId, HttpContext.RequestAborted);
-    if (post == 0)
-    {
-      return TypedResults.NotFound();
-    }
-    return TypedResults.Ok();
+    PostView post = await _postService.DeletePost(id, UserId, HttpContext.RequestAborted);
+    
+    return TypedResults.Ok(post);
   }
   [HttpPut()]
-  public async Task<Results<Ok, NotFound>> UpdatePost([FromBody] PostUpdateDto postUpdateDto)
+  public async Task<Results<Ok<PostView>, NotFound>> UpdatePost([FromBody] PostUpdateDto postUpdateDto)
   {
     int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
 
-    int post = await _postsRepo.UpdatePostAsync(postUpdateDto, UserId, HttpContext.RequestAborted);
-    if (post == 0)
-    {
-      return TypedResults.NotFound();
-    }
-    return TypedResults.Ok();
+    PostView post = await _postService.UpdatePost(postUpdateDto.Id, postUpdateDto.Title, postUpdateDto.Content, UserId, HttpContext.RequestAborted);
+    
+    return TypedResults.Ok(post);
   }
   [HttpPost("comment")]
-  public async Task<Results<Ok<PostComment>, NotFound>> CreatePostComment([FromBody] PostCommentCreateDto postCommentCreateDto)
+  public async Task<Results<Ok<PostCommentView>, NotFound>> CreatePostComment([FromBody] PostCommentCreateDto postCommentCreateDto)
   {
     int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
-    PostComment? createdComment = await _postsRepo.CreatePostCommentAsync(postCommentCreateDto, UserId, HttpContext.RequestAborted);
-    if (createdComment == null)
-    {
-      return TypedResults.NotFound();
-    }
+
+    PostCommentView? createdComment = await _postService.CreatePostComment(postCommentCreateDto.Content, UserId, postCommentCreateDto.PostId, HttpContext.RequestAborted);
+    
     return TypedResults.Ok(createdComment);
   }
 }

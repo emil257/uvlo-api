@@ -17,33 +17,25 @@ public class GlobalExceptionHandler : IExceptionHandler
   {
     _logger.LogError(exception, "Exception occured: {Message}", exception.Message);
 
+    var problemDetails = new ProblemDetails
+    {
+      Status = StatusCodes.Status500InternalServerError,
+      Title = "Server error"
+    };
+    httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
     if (exception is AppException appExeption)
     {
-      var problemDetails = new ProblemDetails
+      problemDetails = new ProblemDetails
       {
         Status = appExeption.StatusCode,
         Title = appExeption.Message
       };
-
       httpContext.Response.StatusCode = appExeption.StatusCode;
-
-      await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
-
-      return true;
     }
-    else
-    {
-      var problemDetails = new ProblemDetails
-      {
-        Status = StatusCodes.Status500InternalServerError,
-        Title = "Server error"
-      };
 
-      httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 
-      await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
-
-      return true;
-    }
+    return true;
   }
 }

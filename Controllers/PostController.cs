@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using uvlo_api.Data.Models.Database;
 using uvlo_api.Data.Models.Dto;
 using uvlo_api.Data.Models.View;
 using uvlo_api.Services;
@@ -44,6 +43,13 @@ public class PostController : ControllerBase
     PostView post = await _postService.GetPostById(id, HttpContext.RequestAborted);
     
     return TypedResults.Ok(post);
+  }
+  [HttpGet("{id}/comments")]
+  public async Task<Results<Ok<IEnumerable<PostCommentView>>, NotFound>> GetPostCommentsById(int id)
+  {
+    IEnumerable<PostCommentView> postComments = await _postService.GetPostCommentsById(id, HttpContext.RequestAborted);
+
+    return TypedResults.Ok(postComments);
   }
   [HttpDelete("{id}")]
   public async Task<Results<Ok<PostView>, NotFound>> DeletePost(int id)

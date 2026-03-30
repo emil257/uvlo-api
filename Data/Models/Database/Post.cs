@@ -23,11 +23,5 @@ namespace uvlo_api.Data.Models.Database
       Content = content;
       UserId = userId;
     }
-    public PostComment AddComment(string content, int userId)
-    {
-      var comment = new PostComment(content, userId, Id);
-      Comments.Add(comment);
-      return comment;
-    }
   }
 }

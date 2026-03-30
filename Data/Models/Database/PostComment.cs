@@ -20,11 +20,4 @@ namespace uvlo_api.Data.Models.Database
       PostId = postId;
     }
   }
-  public class PostCommentCreateDto
-  {
-    [Required]
-    public int PostId { get; set; }
-    [Required]
-    public string Content { get; set; } = string.Empty;
-  }
 }

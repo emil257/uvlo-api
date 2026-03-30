@@ -2,10 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using uvlo_api.Data;
 using uvlo_api.Data.Models.Database;
 using uvlo_api.Data.Models.View;
+using uvlo_api.IRepos;
 
 public class PostsRepo : IPostsRepo
 {
-  private AppDbContext _dbContext;
+  private readonly AppDbContext _dbContext;
 
   public PostsRepo(AppDbContext dbContext)
   {
@@ -32,18 +33,6 @@ public class PostsRepo : IPostsRepo
           Id = s.User.Id,
           UserName = s.User.UserName
         },
-        Comments = s.Comments.Take(5).Select(c => new PostCommentView
-        {
-          Id = c.Id,
-          Content = c.Content,
-          User = new UserView
-          {
-            Id = c.User.Id,
-            UserName = c.User.UserName
-          },
-          CreatedAt = c.CreatedAt,
-          UpdatedAt = c.UpdatedAt
-        }).ToList(),
         CommentsCount = s.Comments.Count,
         CreatedAt = s.CreatedAt,
         UpdatedAt = s.UpdatedAt
@@ -55,6 +44,7 @@ public class PostsRepo : IPostsRepo
   public async Task<List<PostView>> GetPostsViewAsync(CancellationToken cancellationToken)
   {
     IEnumerable<PostView> posts = await _dbContext.Posts
+      .OrderByDescending(p => p.CreatedAt)
       .Select(p => new PostView
       {
         Id = p.Id,
@@ -89,7 +79,6 @@ public class PostsRepo : IPostsRepo
 
   public async Task<Post> Save(Post post, CancellationToken cancellationToken)
   {
-    Console.WriteLine(_dbContext.Entry(post).State);
     if (_dbContext.Entry(post).State == EntityState.Detached)
     {
       _dbContext.Posts.Add(post);

@@ -1,15 +1,18 @@
 ﻿using uvlo_api.Data.Models.Database;
 using uvlo_api.Data.Models.View;
 using uvlo_api.Infrastructure.Exceptions;
+using uvlo_api.IRepos;
 
 namespace uvlo_api.Services
 {
   public class PostService
   {
     private readonly IPostsRepo _postsRepo;
-    public PostService(IPostsRepo postsRepo)
+    private readonly IPostCommentRepo _postCommentRepo;
+    public PostService(IPostsRepo postsRepo, IPostCommentRepo postCommentRepo)
     {
       _postsRepo = postsRepo;
+      _postCommentRepo = postCommentRepo;
     }
 
     public async Task<PostView> CreatePostAsync(string title, string content, int UserId, CancellationToken cancellationToken)
@@ -25,6 +28,10 @@ namespace uvlo_api.Services
       if (post == null)
         throw new AppException("Post not found", 404);
       return post;
+    }
+    public async Task<IEnumerable<PostCommentView>> GetPostCommentsById(int postId, CancellationToken cancellationToken)
+    {
+        return await _postCommentRepo.GetPostCommentsViewAsync(postId, cancellationToken);
     }
     public async Task<PostView> DeletePost(int id, int UserId, CancellationToken cancellationToken)
     {
@@ -59,9 +66,9 @@ namespace uvlo_api.Services
       Post? post = await _postsRepo.GetPostAsync(postId, cancellationToken);
       if (post == null)
         throw new AppException("Post not found", 404);
-      var comment = post.AddComment(content, userId);
-      await _postsRepo.Save(post, cancellationToken);
-      return new PostCommentView(comment);
+      PostComment postComment = new PostComment(content, userId, postId);
+      
+      return new PostCommentView(await _postCommentRepo.Save(postComment, cancellationToken));
     }
   }
 }

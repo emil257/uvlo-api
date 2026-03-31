@@ -7,19 +7,19 @@ namespace uvlo_api.Data.Models.View
     public int Id { get; set; }
     public string? UserName { get; set; }
     public UserView() { }
-    public UserView(AppUserModel user)
+    public UserView(int id, string? userName)
     {
-      Id = user.Id;
-      UserName = user.UserName;
+      Id = id;
+      UserName = userName;
     }
   }
   public class UserViewMe : UserView
   {
     public string? Email { get; set; }
     public UserViewMe() { }
-    public UserViewMe(AppUserModel user) : base(user)
+    public UserViewMe(int id, string userName, string email) : base(id, userName)
     {
-      Email = user.Email;
+      Email = email;
     }
   }
 }

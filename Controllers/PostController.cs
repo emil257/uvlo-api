@@ -24,7 +24,7 @@ public class PostController : ControllerBase
   {
     int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
 
-    PostView createdPost = await _postService.CreatePostAsync(postCreateDto.Title, postCreateDto.Content, UserId, HttpContext.RequestAborted);
+    PostView createdPost = await _postService.CreatePostAsync(postCreateDto.Content, postCreateDto.ParentId, UserId, HttpContext.RequestAborted);
 
     return TypedResults.Ok(createdPost);
   }
@@ -44,10 +44,10 @@ public class PostController : ControllerBase
     
     return TypedResults.Ok(post);
   }
-  [HttpGet("{id}/comments")]
-  public async Task<Results<Ok<IEnumerable<PostCommentView>>, NotFound>> GetPostCommentsById(int id)
+  [HttpGet("{id}/children")]
+  public async Task<Results<Ok<IEnumerable<PostView>>, NotFound>> GetPostChildrenById(int id)
   {
-    IEnumerable<PostCommentView> postComments = await _postService.GetPostCommentsById(id, HttpContext.RequestAborted);
+    IEnumerable<PostView> postComments = await _postService.GetPostChildrenById(id, HttpContext.RequestAborted);
 
     return TypedResults.Ok(postComments);
   }
@@ -68,15 +68,6 @@ public class PostController : ControllerBase
     PostView post = await _postService.UpdatePost(postUpdateDto.Id, postUpdateDto.Title, postUpdateDto.Content, UserId, HttpContext.RequestAborted);
     
     return TypedResults.Ok(post);
-  }
-  [HttpPost("comment")]
-  public async Task<Results<Ok<PostCommentView>, NotFound>> CreatePostComment([FromBody] PostCommentCreateDto postCommentCreateDto)
-  {
-    int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
-
-    PostCommentView? createdComment = await _postService.CreatePostComment(postCommentCreateDto.Content, UserId, postCommentCreateDto.PostId, HttpContext.RequestAborted);
-    
-    return TypedResults.Ok(createdComment);
   }
 }
 

@@ -2,26 +2,31 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using uvlo_api.Infrastructure.Exceptions;
 
+public enum PostType
+{
+  Post = 0,
+  Comment = 1
+}
+
 namespace uvlo_api.Data.Models.Database
 {
   [Table("AppPosts")]
   public class Post : AppBaseEntity
   {
-    [MaxLength(100)]
-    public string Title { get; set; } = string.Empty;
     [MaxLength(500)]
     public string Content { get; set; } = string.Empty;
-    public List<PostComment> Comments { get; set; } = new List<PostComment>();
-    public Post(string title, string content, int userId)
+    public PostType Type { get; set; } = PostType.Post;
+    public int? ParentId { get; set; } = null;
+    public List<Post> Comments { get; set; } = new List<Post>();
+    public Post(string content, int userId, PostType type, int? parentId = null)
     {
-      if (string.IsNullOrWhiteSpace(title))
-        throw new AppException("Title cannot be empty", 400);
       if (string.IsNullOrWhiteSpace(content))
         throw new AppException("Content cannot be empty", 400);
 
-      Title = title;
+      Type = type;
       Content = content;
       UserId = userId;
+      ParentId = parentId;
     }
   }
 }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using uvlo_api.Data.Models.Database;
+using uvlo_api.Data.Models.View;
 
 [Route("auth")]
 [ApiController]
@@ -24,11 +25,11 @@ public class AuthController : ControllerBase
   }
 
   [HttpGet("me")]
-  public async Task<Results<Ok<AppUserModel>, NotFound>> Me()
+  public async Task<Results<Ok<UserViewMe>, NotFound>> Me()
   {
     string? Name = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     bool isParsed = int.TryParse(Name, out int userId);
-    AppUserModel? user = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+    UserViewMe? user = await _userManager.Users.Where(u => u.Id == userId).Select(u => new UserViewMe(u.Id, u.UserName, u.Email)).FirstOrDefaultAsync();
     if(user == null)
     {
         return TypedResults.NotFound();

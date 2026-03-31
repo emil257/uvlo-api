@@ -8,16 +8,21 @@ namespace uvlo_api.Services
   public class PostService
   {
     private readonly IPostsRepo _postsRepo;
-    private readonly IPostCommentRepo _postCommentRepo;
-    public PostService(IPostsRepo postsRepo, IPostCommentRepo postCommentRepo)
+    public PostService(IPostsRepo postsRepo)
     {
       _postsRepo = postsRepo;
-      _postCommentRepo = postCommentRepo;
     }
 
-    public async Task<PostView> CreatePostAsync(string title, string content, int UserId, CancellationToken cancellationToken)
+    public async Task<PostView> CreatePostAsync(string content, int? parentId, int UserId, CancellationToken cancellationToken)
     {
-      Post post = new Post(title, content, UserId);
+      if(parentId != null)
+      {
+        Post? parentPost = await _postsRepo.GetPostAsync(parentId.Value, cancellationToken);
+        if (parentPost == null)
+          throw new AppException("Parent post not found", 404);
+      }
+
+      Post post = new Post(content, UserId, parentId == null ? PostType.Post : PostType.Comment, parentId);
 
       return new PostView(await _postsRepo.Save(post, cancellationToken));
     }
@@ -29,9 +34,9 @@ namespace uvlo_api.Services
         throw new AppException("Post not found", 404);
       return post;
     }
-    public async Task<IEnumerable<PostCommentView>> GetPostCommentsById(int postId, CancellationToken cancellationToken)
+    public async Task<IEnumerable<PostView>> GetPostChildrenById(int parentId, CancellationToken cancellationToken)
     {
-        return await _postCommentRepo.GetPostCommentsViewAsync(postId, cancellationToken);
+        return await _postsRepo.GetPostsViewAsync(parentId, cancellationToken);
     }
     public async Task<PostView> DeletePost(int id, int UserId, CancellationToken cancellationToken)
     {
@@ -51,7 +56,6 @@ namespace uvlo_api.Services
         throw new AppException("Post not found", 404);
       if(post.UserId != UserId)
         throw new AppException("Unauthorized", 403);
-      post.Title = title;
       post.Content = content;
       await _postsRepo.Save(post, cancellationToken);
       return new PostView(post);
@@ -59,16 +63,7 @@ namespace uvlo_api.Services
 
     public async Task<List<PostView>> GetPostsAsync(CancellationToken cancellationToken)
     {
-      return await _postsRepo.GetPostsViewAsync(cancellationToken);
-    }
-    public async Task<PostCommentView> CreatePostComment(string content, int userId, int postId, CancellationToken cancellationToken)
-    {
-      Post? post = await _postsRepo.GetPostAsync(postId, cancellationToken);
-      if (post == null)
-        throw new AppException("Post not found", 404);
-      PostComment postComment = new PostComment(content, userId, postId);
-      
-      return new PostCommentView(await _postCommentRepo.Save(postComment, cancellationToken));
+      return await _postsRepo.GetPostsViewAsync(null, cancellationToken);
     }
   }
 }

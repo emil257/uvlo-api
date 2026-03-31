@@ -4,90 +4,57 @@ using uvlo_api.Data.Models.Database;
 using uvlo_api.Data.Models.View;
 using uvlo_api.IRepos;
 
-public class PostsRepo : IPostsRepo
+namespace uvlo_api.Repos
 {
-  private readonly AppDbContext _dbContext;
-
-  public PostsRepo(AppDbContext dbContext)
+  public class PostsRepo : IPostsRepo
   {
-    _dbContext = dbContext;
-  }
+    private readonly AppDbContext _dbContext;
 
-  public async Task<Post?> GetPostAsync(int id, CancellationToken cancellationToken)
-  {
-    Post? post = await _dbContext.Posts
-    .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
-    return post;
-  }
+    public PostsRepo(AppDbContext dbContext)
+    {
+      _dbContext = dbContext;
+    }
 
-  public async Task<PostView?> GetPostViewAsync(int id, CancellationToken cancellationToken)
-  {
-    PostView? post = await _dbContext.Posts
-      .Select(s => new PostView()
-      {
-        Id = s.Id,
-        Title = s.Title,
-        Content = s.Content,
-        User = new UserView
-        {
-          Id = s.User.Id,
-          UserName = s.User.UserName
-        },
-        CommentsCount = s.Comments.Count,
-        CreatedAt = s.CreatedAt,
-        UpdatedAt = s.UpdatedAt
-      })
+    public async Task<Post?> GetPostAsync(int id, CancellationToken cancellationToken)
+    {
+      Post? post = await _dbContext.Posts
       .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
-    return post;
-  }
+      return post;
+    }
 
-  public async Task<List<PostView>> GetPostsViewAsync(CancellationToken cancellationToken)
-  {
-    IEnumerable<PostView> posts = await _dbContext.Posts
-      .OrderByDescending(p => p.CreatedAt)
-      .Select(p => new PostView
+    public async Task<PostView?> GetPostViewAsync(int id, CancellationToken cancellationToken)
+    {
+      PostView? post = await _dbContext.Posts
+        .Where(p => p.Id == id)
+        .Select(p => new PostView(p.Id,p.Content, p.User, p.Comments.Count(), p.CreatedAt, p.UpdatedAt))
+        .FirstOrDefaultAsync(cancellationToken);
+      return post;
+    }
+
+    public async Task<List<PostView>> GetPostsViewAsync(int? parentId, CancellationToken cancellationToken)
+    {
+      IQueryable<PostView> posts = _dbContext.Posts
+        .OrderByDescending(p => p.CreatedAt)
+        .Where(p => p.ParentId == parentId)
+        .Select(p => new PostView(p.Id, p.Content, p.User, p.Comments.Count(), p.CreatedAt, p.UpdatedAt))
+        .AsSplitQuery();
+
+      return await posts.ToListAsync(cancellationToken);
+    }
+
+    public async Task<Post> Save(Post post, CancellationToken cancellationToken)
+    {
+      if (_dbContext.Entry(post).State == EntityState.Detached)
       {
-        Id = p.Id,
-        Title = p.Title,
-        Content = p.Content,
-        Comments = p.Comments.Take(5).Select(c => new PostCommentView
-        {
-          Id = c.Id,
-          Content = c.Content,
-          User = new UserView
-          {
-            Id = c.User.Id,
-            UserName = c.User.UserName
-          },
-          CreatedAt = c.CreatedAt,
-          UpdatedAt = c.UpdatedAt
-        }).ToList(),
-        CommentsCount = p.Comments.Count(),
-        User = new UserView
-        {
-          Id = p.User.Id,
-          UserName = p.User.UserName
-        },
-        UpdatedAt = p.UpdatedAt,
-        CreatedAt = p.CreatedAt
-      })
-      .AsSplitQuery()
-    .ToListAsync(cancellationToken);
-
-    return posts.ToList();
+        _dbContext.Posts.Add(post);
+      }
+      else
+      {
+        _dbContext.Posts.Update(post);
+      }
+      await _dbContext.SaveChangesAsync(cancellationToken);
+      return post;
+    }
   }
 
-  public async Task<Post> Save(Post post, CancellationToken cancellationToken)
-  {
-    if (_dbContext.Entry(post).State == EntityState.Detached)
-    {
-      _dbContext.Posts.Add(post);
-    }
-    else
-    {
-      _dbContext.Posts.Update(post);
-    }
-    await _dbContext.SaveChangesAsync(cancellationToken);
-    return post;
-  }
 }

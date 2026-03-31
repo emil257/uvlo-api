@@ -125,41 +125,6 @@ namespace uvlo_api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("PostComment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PostId");
-
-                    b.ToTable("AppPostComments", (string)null);
-                });
-
             modelBuilder.Entity("uvlo_api.Data.Models.Database.AppRoleModel", b =>
                 {
                     b.Property<int>("Id")
@@ -275,10 +240,13 @@ namespace uvlo_api.Migrations
                     b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Title")
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -288,7 +256,11 @@ namespace uvlo_api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AppPosts", (string)null);
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AppPosts");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -342,13 +314,19 @@ namespace uvlo_api.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PostComment", b =>
+            modelBuilder.Entity("uvlo_api.Data.Models.Database.Post", b =>
                 {
                     b.HasOne("uvlo_api.Data.Models.Database.Post", null)
                         .WithMany("Comments")
-                        .HasForeignKey("PostId")
+                        .HasForeignKey("ParentId");
+
+                    b.HasOne("uvlo_api.Data.Models.Database.AppUserModel", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("uvlo_api.Data.Models.Database.Post", b =>

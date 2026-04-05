@@ -12,9 +12,11 @@ using uvlo_api.Services;
 public class PostController : ControllerBase
 {
   private readonly PostService _postService;
-  public PostController(PostService postService)
+  private readonly CurrentUserService _currentUserService;
+  public PostController(PostService postService, CurrentUserService currentUserService)
   {
     _postService = postService;
+    _currentUserService = currentUserService;
   }
 
   [HttpPost()]
@@ -22,9 +24,7 @@ public class PostController : ControllerBase
     [FromBody] PostCreateDto postCreateDto
   )
   {
-    int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
-
-    PostView createdPost = await _postService.CreatePostAsync(postCreateDto.Content, postCreateDto.ParentId, UserId, HttpContext.RequestAborted);
+    PostView createdPost = await _postService.CreatePostAsync(postCreateDto.Content, postCreateDto.ParentId, _currentUserService.UserId, HttpContext.RequestAborted);
 
     return TypedResults.Ok(createdPost);
   }
@@ -54,18 +54,14 @@ public class PostController : ControllerBase
   [HttpDelete("{id}")]
   public async Task<Results<Ok<PostView>, NotFound>> DeletePost(int id)
   {
-    int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
-
-    PostView post = await _postService.DeletePost(id, UserId, HttpContext.RequestAborted);
+    PostView post = await _postService.DeletePost(id, _currentUserService.UserId, HttpContext.RequestAborted);
     
     return TypedResults.Ok(post);
   }
   [HttpPut()]
   public async Task<Results<Ok<PostView>, NotFound>> UpdatePost([FromBody] PostUpdateDto postUpdateDto)
   {
-    int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int UserId);
-
-    PostView post = await _postService.UpdatePost(postUpdateDto.Id, postUpdateDto.Title, postUpdateDto.Content, UserId, HttpContext.RequestAborted);
+    PostView post = await _postService.UpdatePost(postUpdateDto.Id, postUpdateDto.Title, postUpdateDto.Content, _currentUserService.UserId, HttpContext.RequestAborted);
     
     return TypedResults.Ok(post);
   }

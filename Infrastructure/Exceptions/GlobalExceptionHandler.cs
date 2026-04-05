@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using uvlo_api.Infrastructure.Exceptions;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
@@ -23,16 +22,6 @@ public class GlobalExceptionHandler : IExceptionHandler
       Title = "Server error"
     };
     httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-
-    if (exception is AppException appExeption)
-    {
-      problemDetails = new ProblemDetails
-      {
-        Status = appExeption.StatusCode,
-        Title = appExeption.Message
-      };
-      httpContext.Response.StatusCode = appExeption.StatusCode;
-    }
 
     await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
 

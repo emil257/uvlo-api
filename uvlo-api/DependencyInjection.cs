@@ -7,6 +7,7 @@ public static class PresentationServiceCollectionExtensions
     services.AddEndpointsApiExplorer();
     services.AddSwaggerGen();
     services.AddExceptionHandler<AppExceptionHandler>();
+    services.AddExceptionHandler<PostExceptionHandler>();
     services.AddExceptionHandler<GlobalExceptionHandler>();
     services.AddProblemDetails();
 

@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using uvlo_application.Exceptions;
+using uvlo_application.Abstractions.Auth;
 
-namespace uvlo_application.Services
+namespace uvlo_infrastructure.Auth
 {
-  public class CurrentUserService
+  public class UserContext : IUserContext
   {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public CurrentUserService(IHttpContextAccessor httpContextAccessor)
+    public UserContext(IHttpContextAccessor httpContextAccessor)
     {
       _httpContextAccessor = httpContextAccessor;
     }

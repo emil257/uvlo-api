@@ -1,22 +1,27 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using uvlo_api.Dto;
+using uvlo_application.Abstractions.Auth;
+using uvlo_application.Posts.Create;
+using uvlo_application.Posts.Delete;
+using uvlo_application.Posts.GetById;
+using uvlo_application.Posts.GetFeed;
+using uvlo_application.Posts.Update;
 using uvlo_application.View;
-using uvlo_application.Services;
 
 [Route("posts")]
 [ApiController]
 [Authorize]
 public class PostController : ControllerBase
 {
-  private readonly PostService _postService;
-  private readonly CurrentUserService _currentUserService;
-  public PostController(PostService postService, CurrentUserService currentUserService)
+  private readonly ISender _sender;
+  private readonly IUserContext _userContext;
+  public PostController(ISender sender, IUserContext userContext)
   {
-    _postService = postService;
-    _currentUserService = currentUserService;
+    _sender = sender;
+    _userContext = userContext;
   }
 
   [HttpPost()]
@@ -24,7 +29,9 @@ public class PostController : ControllerBase
     [FromBody] PostCreateDto postCreateDto
   )
   {
-    PostView createdPost = await _postService.CreatePostAsync(postCreateDto.Content, postCreateDto.ParentId, _currentUserService.UserId, HttpContext.RequestAborted);
+    CreatePostCommand command = new CreatePostCommand(postCreateDto.Content, postCreateDto.ParentId);
+    
+    PostView createdPost = await _sender.Send(command, HttpContext.RequestAborted);
 
     return TypedResults.Ok(createdPost);
   }
@@ -32,7 +39,9 @@ public class PostController : ControllerBase
   [HttpGet()]
   public async Task<Results<Ok<IEnumerable<PostView>>, NotFound>> GetPosts()
   {
-    IEnumerable<PostView> posts = await _postService.GetPostsAsync(HttpContext.RequestAborted);
+    GetFeedQuery query = new GetFeedQuery();
+
+    IEnumerable<PostView> posts = await _sender.Send(query, HttpContext.RequestAborted);
 
     return TypedResults.Ok(posts);
   }
@@ -40,28 +49,36 @@ public class PostController : ControllerBase
   [HttpGet("{id}")]
   public async Task<Results<Ok<PostView>, NotFound>> GetPostById(int id)
   {
-    PostView post = await _postService.GetPostById(id, HttpContext.RequestAborted);
-    
+    GetByIdQuery query = new GetByIdQuery(id);
+
+    PostView post = await _sender.Send(query, HttpContext.RequestAborted);
+
     return TypedResults.Ok(post);
   }
   [HttpGet("{id}/children")]
   public async Task<Results<Ok<IEnumerable<PostView>>, NotFound>> GetPostChildrenById(int id)
   {
-    IEnumerable<PostView> postComments = await _postService.GetPostChildrenById(id, HttpContext.RequestAborted);
+    GetChildrenQuery query = new GetChildrenQuery(id);
+
+    IEnumerable<PostView> postComments = await _sender.Send(query, HttpContext.RequestAborted);
 
     return TypedResults.Ok(postComments);
   }
   [HttpDelete("{id}")]
   public async Task<Results<Ok<PostView>, NotFound>> DeletePost(int id)
   {
-    PostView post = await _postService.DeletePost(id, _currentUserService.UserId, HttpContext.RequestAborted);
+    DeletePostCommand command = new DeletePostCommand(id);
+
+    PostView post = await _sender.Send(command, HttpContext.RequestAborted);
     
     return TypedResults.Ok(post);
   }
   [HttpPut()]
   public async Task<Results<Ok<PostView>, NotFound>> UpdatePost([FromBody] PostUpdateDto postUpdateDto)
   {
-    PostView post = await _postService.UpdatePost(postUpdateDto.Id, postUpdateDto.Title, postUpdateDto.Content, _currentUserService.UserId, HttpContext.RequestAborted);
+    UpdatePostCommand command = new UpdatePostCommand(postUpdateDto.Id,  postUpdateDto.Content);
+
+    PostView post = await _sender.Send(command, HttpContext.RequestAborted);
     
     return TypedResults.Ok(post);
   }

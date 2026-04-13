@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using uvlo_application.Abstractions.Data;
 using uvlo_core.Entities;
 
-public partial class AppDbContext : IdentityDbContext<AppUserModel, AppRoleModel, int>
+public partial class AppDbContext : IdentityDbContext<AppUserModel, AppRoleModel, int>, IAppDbContext
 {
   public DbSet<Post> Posts { get; set; } = null!;
 

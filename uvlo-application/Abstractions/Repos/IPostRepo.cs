@@ -1,7 +1,7 @@
 using uvlo_core.Entities;
 using uvlo_application.View;
 
-namespace uvlo_application.IRepos
+namespace uvlo_application.Abstractions.Repos
 {
   public interface IPostsRepo
   {

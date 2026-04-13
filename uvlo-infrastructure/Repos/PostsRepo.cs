@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using uvlo_application.IRepos;
+using uvlo_application.Abstractions.Repos;
 using uvlo_application.View;
 using uvlo_core.Entities;
 

@@ -11,6 +11,8 @@ namespace uvlo_application.View
     public int CommentsCount { get; set; } = 0;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
+    public int LikesCount { get; set; } = 0;
+    public int? ParentId { get; set; } = null;
     public PostView() { }
     public PostView(Post post)
     {
@@ -20,15 +22,19 @@ namespace uvlo_application.View
       Comments = post.Comments.Select(c => new PostView(c)).ToList();
       CreatedAt = post.CreatedAt;
       UpdatedAt = post.UpdatedAt;
+      ParentId = post.ParentId;
+      LikesCount = post.LikesCount;
     }
-    public PostView(int id, string content, AppUserModel user, int commentsCount, DateTimeOffset createdAt, DateTimeOffset updatedAt)
+    public PostView(int id, string content, AppUserModel user, int commentsCount, int likesCount, int? parentId, DateTimeOffset createdAt, DateTimeOffset updatedAt)
     {
       Id = id;
       Content = content;
       User = new UserView(user.Id, user.UserName);
       CommentsCount = commentsCount;
+      ParentId = parentId;
       CreatedAt = createdAt;
       UpdatedAt = updatedAt;
+      LikesCount = likesCount;
     }
   }
 }

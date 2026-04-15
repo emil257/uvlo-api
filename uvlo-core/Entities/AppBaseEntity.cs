@@ -1,6 +1,6 @@
 ﻿namespace uvlo_core.Entities
 {
-  public abstract class AppBaseEntity
+  public abstract class AppBaseEntity : Entity
   {
     public int Id { get;  set; }
     public int UserId { get;  set; }

@@ -26,7 +26,7 @@ namespace uvlo_infrastructure.Repos
     {
       PostView? post = await _dbContext.Posts
         .Where(p => p.Id == id)
-        .Select(p => new PostView(p.Id,p.Content, p.User, p.Comments.Count(), p.CreatedAt, p.UpdatedAt))
+        .Select(p => new PostView(p.Id, p.Content, p.User, p.Comments.Count(), p.LikesCount, p.ParentId, p.CreatedAt, p.UpdatedAt))
         .FirstOrDefaultAsync(cancellationToken);
       return post;
     }
@@ -36,7 +36,7 @@ namespace uvlo_infrastructure.Repos
       IQueryable<PostView> posts = _dbContext.Posts
         .OrderByDescending(p => p.CreatedAt)
         .Where(p => p.ParentId == parentId)
-        .Select(p => new PostView(p.Id, p.Content, p.User, p.Comments.Count(), p.CreatedAt, p.UpdatedAt))
+        .Select(p => new PostView(p.Id, p.Content, p.User, p.Comments.Count(), p.LikesCount, p.ParentId, p.CreatedAt, p.UpdatedAt))
         .AsSplitQuery();
 
       return await posts.ToListAsync(cancellationToken);

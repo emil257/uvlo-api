@@ -1,38 +1,54 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using MediatR;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using uvlo_application.Abstractions.Data;
 using uvlo_core.Entities;
+using uvlo_core.Events;
 
 public partial class AppDbContext : IdentityDbContext<AppUserModel, AppRoleModel, int>, IAppDbContext
 {
+  private readonly IPublisher _publisher;
   public DbSet<Post> Posts { get; set; } = null!;
+  public DbSet<PostLike> PostLikes { get; set; } = null!;
 
-  public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+  public AppDbContext(DbContextOptions<AppDbContext> options, IPublisher publisher) : base(options)
   {
+    _publisher = publisher;
   }
 
-  protected override void OnModelCreating(ModelBuilder builder)
+  protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
-    base.OnModelCreating(builder);
+    base.OnModelCreating(modelBuilder);
 
-    builder.Entity<Post>(entity => {
-      entity.ToTable("AppPosts");
-
-      entity.HasKey(p => p.Id);
-
-      entity.HasQueryFilter(p => p.DeletedAt == null);
-
-      entity.HasMany(p => p.Comments)
-          .WithOne()
-          .HasForeignKey(p => p.ParentId);
-
-      entity.Property(p => p.Type)
-          .HasConversion<string>()
-          .HasMaxLength(20);
-
-      entity.Property(p => p.Content)
-          .HasMaxLength(550);
-    });
+    modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
   }
 
+  public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+  {
+    int result = await base.SaveChangesAsync(cancellationToken);
+
+    await PublishDomainEventsAsync();
+
+    return result;
+  }
+
+  private async Task PublishDomainEventsAsync()
+  {
+    var domainEvents = ChangeTracker.Entries<Entity>()
+        .Select(e => e.Entity)
+        .Where(e => e.DomainEvents != null && e.DomainEvents.Any())
+        .SelectMany(e => {
+          List<IDomainEvent> domainEvents = e.DomainEvents.ToList();
+
+          e.ClearEvents();
+
+          return domainEvents;
+        })
+        .ToList();
+
+    foreach (IDomainEvent domainEvent in domainEvents)
+    {
+      await _publisher.Publish(domainEvent);
+    }
+  }
 }

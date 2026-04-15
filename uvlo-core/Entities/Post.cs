@@ -9,6 +9,7 @@ namespace uvlo_core.Entities
     public PostType Type { get; set; } = PostType.Post;
     public int? ParentId { get; set; } = null;
     public List<Post> Comments { get; set; } = new List<Post>();
+    public int LikesCount { get; set; } = 0;
     public Post(string content, int userId, PostType type, int? parentId = null)
     {
       if (string.IsNullOrWhiteSpace(content))

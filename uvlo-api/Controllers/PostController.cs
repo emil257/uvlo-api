@@ -8,6 +8,7 @@ using uvlo_application.Posts.Create;
 using uvlo_application.Posts.Delete;
 using uvlo_application.Posts.GetById;
 using uvlo_application.Posts.GetFeed;
+using uvlo_application.Posts.Like;
 using uvlo_application.Posts.Update;
 using uvlo_application.View;
 
@@ -80,6 +81,15 @@ public class PostController : ControllerBase
 
     PostView post = await _sender.Send(command, HttpContext.RequestAborted);
     
+    return TypedResults.Ok(post);
+  }
+  [HttpPost("{id}/like")]
+  public async Task<Results<Ok<PostView>, NotFound>> LikePost(int id)
+  {
+    LikePostCommand command = new LikePostCommand(id);
+
+    PostView post = await _sender.Send(command, HttpContext.RequestAborted);
+
     return TypedResults.Ok(post);
   }
 }

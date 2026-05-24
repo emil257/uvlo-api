@@ -8,6 +8,8 @@ using uvlo_application.Abstractions.Repos;
 using uvlo_application.Abstractions.Auth;
 using uvlo_infrastructure.Auth;
 using uvlo_application.Abstractions.Data;
+using uvlo_application.Abstractions.Services;
+using uvlo_infrastructure.Services;
 
 
 public static partial class InfrastructureServiceCollectionExtensions
@@ -31,6 +33,7 @@ public static partial class InfrastructureServiceCollectionExtensions
 
     services.AddScoped<IPostsRepo, PostsRepo>();
     services.AddScoped<IUserContext, UserContext>();
+    services.AddScoped<IFileUploadService, FileUploadService>();
 
     return services;
   }

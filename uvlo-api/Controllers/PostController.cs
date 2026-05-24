@@ -18,20 +18,18 @@ using uvlo_application.View;
 public class PostController : ControllerBase
 {
   private readonly ISender _sender;
-  private readonly IUserContext _userContext;
-  public PostController(ISender sender, IUserContext userContext)
+  public PostController(ISender sender)
   {
     _sender = sender;
-    _userContext = userContext;
   }
 
   [HttpPost()]
   public async Task<Results<Ok<PostView>, ProblemHttpResult>> CreatePost(
-    [FromBody] PostCreateDto postCreateDto
+    [FromForm] PostCreateDto postCreateDto
   )
   {
-    CreatePostCommand command = new CreatePostCommand(postCreateDto.Content, postCreateDto.ParentId);
-    
+    CreatePostCommand command = new CreatePostCommand(postCreateDto.Content, postCreateDto.ParentId, postCreateDto.Attachments);
+
     PostView createdPost = await _sender.Send(command, HttpContext.RequestAborted);
 
     return TypedResults.Ok(createdPost);

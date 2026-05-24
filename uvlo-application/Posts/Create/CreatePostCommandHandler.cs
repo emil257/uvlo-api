@@ -1,7 +1,10 @@
-﻿using uvlo_application.Abstractions.Auth;
+﻿using Microsoft.AspNetCore.Http;
+using System.Diagnostics;
+using uvlo_application.Abstractions.Auth;
 using uvlo_application.Abstractions.Data;
 using uvlo_application.Abstractions.Messaging;
 using uvlo_application.Abstractions.Repos;
+using uvlo_application.Abstractions.Services;
 using uvlo_application.Exceptions;
 using uvlo_application.View;
 using uvlo_core.Entities;
@@ -15,12 +18,13 @@ namespace uvlo_application.Posts.Create
     private readonly IPostsRepo _postsRepo;
     private readonly IUserContext _userContext;
     private readonly IAppDbContext _appDbContext;
-
-    public CreatePostCommandHandler(IPostsRepo postsRepo, IUserContext userContext, IAppDbContext appDbContext)
+    private readonly IFileUploadService _fileUploadService;
+    public CreatePostCommandHandler(IPostsRepo postsRepo, IUserContext userContext, IAppDbContext appDbContext, IFileUploadService fileUploadService)
     {
       _postsRepo = postsRepo;
       _userContext = userContext;
       _appDbContext = appDbContext;
+      _fileUploadService = fileUploadService;
     }
     public async Task<PostView> Handle(CreatePostCommand request, CancellationToken cancellationToken)
      {
@@ -32,6 +36,16 @@ namespace uvlo_application.Posts.Create
       }
 
       Post post = new Post(request.content, _userContext.UserId, request.parentId == null ? PostType.Post : PostType.Comment, request.parentId);
+
+      if(request.attachments != null)
+      {
+        foreach (IFormFile file in request.attachments)
+        {
+          using var stream = file.OpenReadStream();
+          string fileUrl = await _fileUploadService.SaveFileAsync(stream, file.FileName, file.ContentType);
+        }
+
+      }
 
       _appDbContext.Posts.Add(post);
 

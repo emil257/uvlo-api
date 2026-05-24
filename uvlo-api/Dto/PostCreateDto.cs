@@ -7,5 +7,6 @@ namespace uvlo_api.Dto
     [Required]
     public string Content { get; set; } = string.Empty;
     public int? ParentId { get; set; } = null;
+    public List<IFormFile>? Attachments { get; set; } = null;
   }
 }
